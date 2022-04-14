@@ -2,24 +2,24 @@
 #include <WiFi.h>
 
 
-const char* ssid="autoNinja";
-const char* password="pugz2010";
+const char* ssid="zombieIncubator";
+const char* password="1BottleOfGina";
 
 WiFiServer server(80);
 //inputs
 
 
 //outputs
-const int accessoryPin= 36;
-const int ignitionPin =37;
+const int accessoryPin= 2;
+const int ignitionPin =27;
 const int starterPin =39;
 
 
 String header;
 // Auxiliar variables to store the current output state
-String accessoryState = "off";
-String ignitionState = "off";
-String starterState="off";
+String accessoryState = "on";
+String ignitionState = "on";
+String starterState="on";
 // Current time
 unsigned long currentTime = millis();
 // Previous time
@@ -33,11 +33,11 @@ pinMode (accessoryPin,OUTPUT);
 pinMode (ignitionPin,OUTPUT);
 pinMode (starterPin,OUTPUT);
 
-  Serial.begin(115200);
+  Serial.begin(9600);
 digitalWrite(accessoryPin,LOW);
 digitalWrite(ignitionPin,LOW);
 digitalWrite(starterPin,LOW);
-
+WiFi.mode(WIFI_STA);
 WiFi.begin(ssid,password);
 while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -83,19 +83,33 @@ void loop() {
               accessoryState = "on";
               digitalWrite(accessoryPin, HIGH);
             } else if (header.indexOf("GET /accessory/off") >= 0) {
+                if(ignitionState=="on"){
+                  Serial.println("Cannot turn off accessory while ignition is on");
+                  client.println("<script>document.getElementById(\"statusBar\").innerHTML = \"Cannot turn off accessory while ignition is on\"</script>");
+                } else {
               Serial.println("accessory off");
               accessoryState = "off";
               digitalWrite(accessoryPin, LOW);
-            } else if (header.indexOf("GET /ignition/on") >= 0) {
+            }} else if (header.indexOf("GET /ignition/on") >= 0) {
+              if (accessoryState=="off"){
+                 Serial.println("Cannot turn on ignition while accessory is off");
+                 client.println("<script>document.getElementById(\"statusBar\").innerHTML = \"Cannot turn on ignition while accessory is off\"</script>");
+              } else {
               Serial.println("ignition on");
               ignitionState = "on";
               digitalWrite(ignitionPin, HIGH);
-            } else if (header.indexOf("GET /ignition/off") >= 0) {
+            } }else if (header.indexOf("GET /ignition/off") >= 0) {
               Serial.println("ignition off");
               ignitionState = "off";
               digitalWrite(ignitionPin, LOW);
             }
-            
+             if (header.indexOf("GET /starter/on") >= 0) {
+               if(accessoryState=="on" && ignitionState=="on"){
+                Serial.println("starting crank");
+                starterState="on";
+                digitalWrite(starterPin,HIGH);
+               
+             }}
             // Display the HTML web page
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
@@ -108,26 +122,35 @@ void loop() {
             client.println(".button2 {background-color: #555555;}</style></head>");
             
             // Web Page Heading
-            client.println("<body><h1>ESP32 Web Server</h1>");
+            client.println("<body><h1>autoNinja</h1>");
             
             // Display current state, and ON/OFF buttons for GPIO 26  
-            client.println("<p>GPIO 26 - State " + accessoryState + "</p>");
+            client.println("<p id=\"starterStatus\">accessoryPin=26 - State " + accessoryState + "</p>");
             // If the output26State is off, it displays the ON button       
             if (accessoryState=="off") {
-              client.println("<p><a href=\"/26/on\"><button class=\"button\">ON</button></a></p>");
+              client.println("<p><a href=\"/accessory/on\"><button class=\"button button2\">Accessory</button></a></p>");
             } else {
-              client.println("<p><a href=\"/26/off\"><button class=\"button button2\">OFF</button></a></p>");
+              client.println("<p><a href=\"/accessory/off\"><button class=\"button\">Accessory</button></a></p>");
             } 
                
             // Display current state, and ON/OFF buttons for GPIO 27  
-            client.println("<p>GPIO 27 - State " + ignitionState + "</p>");
+            client.println("<p id=\"starterStatus\">ignitionPin=27 - State " + ignitionState + "</p>");
             // If the output27State is off, it displays the ON button       
             if (ignitionState=="off") {
-              client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
+              client.println("<p><a href=\"/ignition/on\"><button class=\"button button2\">Ignition</button></a></p>");
             } else {
-              client.println("<p><a href=\"/27/off\"><button class=\"button button2\">OFF</button></a></p>");
+              client.println("<p><a href=\"/ignition/off\"><button class=\"button\">Ignition</button></a></p>");
             }
+ client.println("<p id=\"statusBar\"></p>");
             client.println("</body></html>");
+            if(accessoryState=="on" && ignitionState=="on"){
+               client.println("<script>document.getElementById(\"starterStatus\").innerHTML = \"Ready to start car\"</script>");
+
+            } else {
+              client.println("<script>document.getElementById(\"starterStatus\").innerHTML = \"turn on ac and ign to prep\"</script>");
+             
+            }
+            
             
             // The HTTP response ends with another blank line
             client.println();
