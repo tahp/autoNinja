@@ -10,7 +10,7 @@ WiFiServer server(80);
 
 
 //outputs
-const int accessoryPin= 2;
+const int accessoryPin= 26;
 const int ignitionPin =27;
 const int starterPin =39;
 
@@ -33,10 +33,15 @@ pinMode (accessoryPin,OUTPUT);
 pinMode (ignitionPin,OUTPUT);
 pinMode (starterPin,OUTPUT);
 
-  Serial.begin(9600);
+ 
+digitalWrite(accessoryPin,HIGH);
+digitalWrite(ignitionPin,HIGH);
+digitalWrite(starterPin,HIGH);
+delay(1000);
 digitalWrite(accessoryPin,LOW);
 digitalWrite(ignitionPin,LOW);
 digitalWrite(starterPin,LOW);
+ Serial.begin(115200);
 WiFi.mode(WIFI_STA);
 WiFi.begin(ssid,password);
 while (WiFi.status() != WL_CONNECTED) {
@@ -85,7 +90,7 @@ void loop() {
             } else if (header.indexOf("GET /accessory/off") >= 0) {
                 if(ignitionState=="on"){
                   Serial.println("Cannot turn off accessory while ignition is on");
-                  client.println("<script>document.getElementById(\"statusBar\").innerHTML = \"Cannot turn off accessory while ignition is on\"</script>");
+                  client.println("<script>document.getElementById(\"starterStatus\").innerHTML = \"Cannot turn off accessory while ignition is on\"setTimeout(myTimeout,2000) function myTimeout(){window.location.href = \"WiFi.localIP()\"};</script>");
                 } else {
               Serial.println("accessory off");
               accessoryState = "off";
@@ -93,7 +98,7 @@ void loop() {
             }} else if (header.indexOf("GET /ignition/on") >= 0) {
               if (accessoryState=="off"){
                  Serial.println("Cannot turn on ignition while accessory is off");
-                 client.println("<script>document.getElementById(\"statusBar\").innerHTML = \"Cannot turn on ignition while accessory is off\"</script>");
+                 client.println("<script>document.getElementById(\"starterStatus\").innerHTML = \"Cannot turn on ignition while accessory is off\"</script>");
               } else {
               Serial.println("ignition on");
               ignitionState = "on";
@@ -109,7 +114,17 @@ void loop() {
                 starterState="on";
                 digitalWrite(starterPin,HIGH);
                
-             }}
+             }
+             
+             
+             }
+            if (header.indexOf("GET /GPS/on") >=0){
+              Serial.println("AT+GPS=1");
+            }
+            if (header.indexOf("GET /GPS/off") >=0){
+              Serial.println("AT+GPS=0");
+            }
+
             // Display the HTML web page
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
@@ -144,10 +159,10 @@ void loop() {
  client.println("<p id=\"statusBar\"></p>");
             client.println("</body></html>");
             if(accessoryState=="on" && ignitionState=="on"){
-               client.println("<script>document.getElementById(\"starterStatus\").innerHTML = \"Ready to start car\"</script>");
+               client.println("<script>setTimeout(myTimeout,2000) function myTimeout(){document.getElementById(\"starterStatus\").innerHTML = \"Ready to start car\"}</script>");
 
             } else {
-              client.println("<script>document.getElementById(\"starterStatus\").innerHTML = \"turn on ac and ign to prep\"</script>");
+              client.println("<script>setTimeout(myTimeout,2000) function myTimeout(){document.getElementById(\"starterStatus\").innerHTML = \"turn on ac and ign to prep\"}</script>");
              
             }
             
