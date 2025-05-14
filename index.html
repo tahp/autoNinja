@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Link Tracker</title>
+<style>
+  .link-item {
+    margin-bottom: 10px;
+  }
+  .last-clicked {
+    font-size: 0.8em;
+    color: gray;
+  }
+</style>
+</head>
+<body>
+
+<h1>My Links</h1>
+
+<div id="linkContainer">
+  <div class="link-item">
+    <a href="https://www.example.com" data-link-id="link1">Example Link 1</a>
+    <div class="last-clicked" id="lastClicked_link1"></div>
+  </div>
+  <div class="link-item">
+    <a href="https://www.anotherexample.com" data-link-id="link2">Example Link 2</a>
+    <div class="last-clicked" id="lastClicked_link2"></div>
+  </div>
+  </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const links = document.querySelectorAll('#linkContainer a');
+
+    links.forEach(link => {
+      const linkId = link.dataset.linkId;
+      const lastClickedDiv = document.getElementById(`lastClicked_${linkId}`);
+      const lastClickedTime = localStorage.getItem(`lastClicked_${linkId}`);
+
+      if (lastClickedTime) {
+        lastClickedDiv.textContent = `Last clicked: ${new Date(parseInt(lastClickedTime)).toLocaleString()}`;
+      }
+
+      link.addEventListener('click', function() {
+        const now = Date.now();
+        localStorage.setItem(`lastClicked_${linkId}`, now);
+        lastClickedDiv.textContent = `Last clicked: ${new Date(now).toLocaleString()}`;
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
+
+   
